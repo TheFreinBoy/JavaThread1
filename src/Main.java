@@ -1,16 +1,18 @@
-import java.util.Random;
+import java.util.Scanner;
 
 class ThreadDemo {
 
     static class Calculator implements Runnable {
         private final int threadId;
         private final int step;
+        private final int workTimeSeconds;
 
         private volatile boolean canStop = false;
 
-        public Calculator(int threadId, int step) {
+        public Calculator(int threadId, int step, int workTimeSeconds) {
             this.threadId = threadId;
             this.step = step;
+            this.workTimeSeconds = workTimeSeconds;
         }
 
         public void stopThread() {
@@ -23,54 +25,79 @@ class ThreadDemo {
             long count = 0;
             long currentNumber = 0;
 
-            long startTime = System.nanoTime();
-
             while (!canStop) {
                 sum += currentNumber;
                 count++;
                 currentNumber += step;
             }
 
-            long endTime = System.nanoTime();
-
-            double elapsedSeconds = (endTime - startTime) / 1_000_000_000.0;
-            
-            System.out.printf("[Потік %d] завершив роботу. Крок: %2d | Доданків: %9d | Сума: %d | Час: %.2f сек.%n",
-                    threadId, step, count, sum, elapsedSeconds);
+            System.out.printf("[Потік №%d] Сума: %d | Крок: %d | Доданків: %d | Час: %d сек.%n",
+                    threadId, sum, step, count, workTimeSeconds);
         }
     }
 
     public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
 
-        int threadCount = 4;
+        System.out.println("Введіть крок роботи потоків:");
+        int step = Integer.parseInt(scanner.nextLine().trim());
+
+        System.out.println("Введіть час роботи потоків у секундах через пробіл:");
+        String timesInput = scanner.nextLine().trim();
+
+        String[] timesStr = timesInput.split("\\s+");
+        int threadCount = timesStr.length;
+        int[] workTimes = new int[threadCount];
+
+        for (int i = 0; i < threadCount; i++) {
+            workTimes[i] = Integer.parseInt(timesStr[i]);
+        }
+
         Calculator[] tasks = new Calculator[threadCount];
         Thread[] threads = new Thread[threadCount];
 
         for (int i = 0; i < threadCount; i++) {
-            int threadId = i + 1;
-            int step = threadId * 2;
-
-            tasks[i] = new Calculator(threadId, step);
+            tasks[i] = new Calculator(i + 1, step, workTimes[i]);
             threads[i] = new Thread(tasks[i]);
             threads[i].start();
         }
 
         Thread stopper = new Thread(() -> {
-            Random rnd = new Random();
+            long startTime = System.nanoTime();
+            int activeCount = threadCount;
+            boolean[] stopped = new boolean[threadCount];
 
-            for (int i = 0; i < threadCount; i++) {
-                try {
-                    int delay = 1000 + rnd.nextInt(1000);
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    System.out.println("Керуючий потік було перервано.");
+            while (activeCount > 0) {
+                double elapsedSeconds = (System.nanoTime() - startTime) / 1_000_000_000.0;
+
+                for (int i = 0; i < threadCount; i++) {
+                    if (!stopped[i] && elapsedSeconds >= workTimes[i]) {
+                        tasks[i].stopThread();
+                        stopped[i] = true;
+                        activeCount--;
+                    }
                 }
 
-                tasks[i].stopThread();
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         });
 
         stopper.start();
+
+        try {
+            for (Thread t : threads) {
+                t.join();
+            }
+            stopper.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("Усі потоки завершили роботу.");
+        scanner.close();
     }
 }
