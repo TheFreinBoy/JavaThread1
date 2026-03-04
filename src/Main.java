@@ -1,6 +1,6 @@
 import java.util.Random;
 
- class ThreadDemo {
+class ThreadDemo {
 
     static class Calculator implements Runnable {
         private final int threadId;
@@ -23,14 +23,20 @@ import java.util.Random;
             long count = 0;
             long currentNumber = 0;
 
+            long startTime = System.nanoTime();
+
             while (!canStop) {
                 sum += currentNumber;
                 count++;
                 currentNumber += step;
             }
 
-            System.out.printf("[Потік %d] завершив роботу. Крок: %2d | Доданків: %9d | Сума: %d%n",
-                    threadId, step, count, sum);
+            long endTime = System.nanoTime();
+
+            double elapsedSeconds = (endTime - startTime) / 1_000_000_000.0;
+            
+            System.out.printf("[Потік %d] завершив роботу. Крок: %2d | Доданків: %9d | Сума: %d | Час: %.2f сек.%n",
+                    threadId, step, count, sum, elapsedSeconds);
         }
     }
 
