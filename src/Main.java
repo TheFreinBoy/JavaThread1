@@ -42,7 +42,7 @@ class ThreadDemo {
         System.out.println("Введіть крок роботи потоків:");
         int step = Integer.parseInt(scanner.nextLine().trim());
 
-        System.out.println("Введіть час роботи потоків у секундах через пробіл:");
+        System.out.println("Введіть час роботи потоків:");
         String timesInput = scanner.nextLine().trim();
 
         String[] timesStr = timesInput.split("\\s+");
@@ -97,7 +97,7 @@ class ThreadDemo {
             Thread.currentThread().interrupt();
         }
 
-        System.out.println("Усі потоки завершили роботу.");
+        System.out.println("Всі потоки завершили роботу.");
         scanner.close();
     }
 }
